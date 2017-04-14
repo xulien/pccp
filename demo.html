@@ -1,0 +1,28 @@
+<html>
+  <head>
+    <title>test</title>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+
+    <link rel="stylesheet" href="node_modules/nouislider/distribute/nouislider.css">
+    <script src="dist/app.bundle.js" charset="utf-8"></script>
+    <script type="text/javascript">
+      document.addEventListener("DOMContentLoaded", () => pccp.init({
+        output: {
+          w:300,
+          h:150
+        },
+        board: {
+          side: 500
+        }
+      }));
+    </script>
+
+  </head>
+  <body>
+    <div id="pccp"></div>
+    <div style="margin: 10px; color: red;">
+      <p>>>>> Output format is set to: 300x150</p>
+      <p>>>>> Send action is unusable for this demo</p>
+    </div>
+  </body>
+</html>
