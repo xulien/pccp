@@ -2,13 +2,15 @@ export default class Clip {
 
   constructor(canvas, options) {
 
-    this.selected = { sx: 0, sy: 0, sw: 0, sh:0 }
+    this.selected =  { sx: 0, sy: 0, sw: 0, sh: 0 }
 
     this.canvas = canvas
     this.ctx = this.canvas.getContext('2d')
     this.options = options
 
     this.clip = {}
+
+    this.debug = false
 
     this.output_ratio = options.output.w / options.output.h
 
@@ -47,7 +49,6 @@ export default class Clip {
   }
 
   draw() {
-
     this.l.w = this.mousePos.x - this.clip.w / 2
 
     this.r.x = this.mousePos.x + this.clip.w / 2
@@ -88,11 +89,14 @@ export default class Clip {
       this.t.h = this.canvas.height - this.clip.h
     }
 
-    this.selected = {
-      sx: this.t.x,
-      sy: this.t.h,
-      sw: this.clip.w,
-      sh: this.clip.h
+
+    if (!this.debug) {
+      this.selected = {
+        sx: this.t.x,
+        sy: this.t.h,
+        sw: this.clip.w,
+        sh: this.clip.h
+      }
     }
 
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height)
@@ -101,16 +105,11 @@ export default class Clip {
     this.ctx.fillRect(this.r.x, this.r.y, this.r.w, this.r.h)
     this.ctx.fillRect(this.t.x, this.t.y, this.t.w, this.t.h)
     this.ctx.fillRect(this.b.x, this.b.y, this.b.w, this.b.h)
+
   }
 
   onLeave() {
     this.dragging = false
-  }
-
-  positioning(x,y) {
-    this.mousePos.x = x
-    this.mousePos.y = y
-    this.draw()
   }
 
   onWheel(event) {
@@ -127,14 +126,22 @@ export default class Clip {
   onDown(event) {
     this.dragging = true
     const reposition = this.canvas.getBoundingClientRect()
-    this.positioning(event.pageX - reposition.left, event.pageY - reposition.top)
+    this.mousePos = {
+      x: event.pageX - reposition.left,
+      y: event.pageY - reposition.top
+    }
+    this.draw()
   }
 
   onMove(event) {
     if (this.dragging) {
       this.dragging = true
       const reposition = this.canvas.getBoundingClientRect()
-      this.positioning(event.pageX - reposition.left, event.pageY - reposition.top)
+      this.mousePos = {
+        x: event.pageX - reposition.left,
+        y: event.pageY - reposition.top
+      }
+      this.draw()
     }
   }
 

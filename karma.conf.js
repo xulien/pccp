@@ -6,22 +6,29 @@ module.exports = function(config) {
     // base path that will be used to resolve all patterns (eg. files, exclude)
     basePath: '',
 
-
     // frameworks to use
     // available frameworks: https://npmjs.org/browse/keyword/karma-adapter
     frameworks: ['mocha'],
 
-
     // list of files / patterns to load in the browser
     files: [
       'tests.webpack.js',
-      { pattern: 'test/images/*.jpg', watched: false, included: false, served: true, nocache: false },
-      { pattern: 'test/images/*.png', watched: false, included: false, served: true, nocache: false }
+      {
+        pattern: 'test/images/*.jpg',
+        watched: false,
+        included: false,
+        served: true,
+        nocache: false
+      },
+      { pattern: 'test/images/*.png',
+        watched: false,
+        included: false,
+        served: true,
+        nocache: false
+      }
     ],
 
-    proxies: {
-      '/img/': '/base/test/images/'
-    },
+    proxies: { '/img/': '/base/test/images/' },
 
     // list of files to exclude
     exclude: [],
@@ -87,7 +94,7 @@ module.exports = function(config) {
 
     // start these browsers
     // available browser launchers: https://npmjs.org/browse/keyword/karma-launcher
-    browsers: [/*'Firefox',*/ 'Chrome'],
+    browsers: ['Firefox','Chrome'],
 
 
     // Continuous Integration mode

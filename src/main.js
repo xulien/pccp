@@ -34,7 +34,6 @@ export default (raw, board, options) => {
   const background = new Background(preview, raw, canvas_background, options)
   const clip = new Clip(canvas_clip, options)
 
-
   redRangeSlider.updateOptions({ start: [ background.rgbAverage.red ] })
   redRangeSlider.on('update', ( values, handle ) => background.changeColorLevel(Math.round(values[handle]), 'red'))
 
@@ -49,6 +48,7 @@ export default (raw, board, options) => {
     greenRangeSlider.set(Math.round(greenRangeSlider.get()) + 5)
     blueRangeSlider.set(Math.round(blueRangeSlider.get()) + 5)
   })
+
   lessBrightness.addEventListener('click', () => {
     redRangeSlider.set(Math.round(redRangeSlider.get()) - 5)
     greenRangeSlider.set(Math.round(greenRangeSlider.get()) - 5)
@@ -59,8 +59,7 @@ export default (raw, board, options) => {
   greenRangeSlider.set(background.rgbAverage.green)
   blueRangeSlider.set(background.rgbAverage.blue)
 
-
-  apply.addEventListener('click', () => preview.src = background.apply(clip, raw))
+  apply.addEventListener('click', () => preview.src = background.apply(clip))
   save.addEventListener('click', () => background.save())
   clear.addEventListener('click', () => {
     background.clear()
