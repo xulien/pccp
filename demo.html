@@ -5,12 +5,21 @@
 
     <link rel="stylesheet" type="text/css" href="node_modules/nouislider/distribute/nouislider.css">
     <script type="text/javascript" src="dist/app.bundle.js" charset="utf-8"></script>
+    <script src="dist/mozjpeg.es6.js" charset="utf-8"></script>
     <script type="text/javascript">
       document.addEventListener("DOMContentLoaded", () => pccp.init({
-        output: {
-          w:300,
-          h:150
-        },
+        output: [
+          {
+            w:300,
+            h:150,
+            t: 'large'
+          },
+          {
+            w:150,
+            h: 75,
+            t: 'small'
+          }
+        ],
         board: {
           side: 500
         }
@@ -21,7 +30,8 @@
   <body>
     <div id="pccp"></div>
     <div style="margin: 10px; color: red;">
-      <p>>>>> Output format is set to: 300x150</p>
+      <p>>>>> Output format is set to: large => 300x150 and small => 150x75</p>
+      <p>>>>> Preview showing large output file</p>
       <p>>>>> Send action is unusable for this demo</p>
     </div>
   </body>
