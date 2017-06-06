@@ -25,6 +25,7 @@ exports.init = (options = {}) => {
     const file = dropbox.files[0]
 
     raw.addEventListener('load', () => {
+      URL.revokeObjectURL(file)
       preview.addEventListener('load', function main() {
         Main(raw, board, options)
         preview.removeEventListener('load', main, false)
