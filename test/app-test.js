@@ -58,7 +58,7 @@ describe('Application', () => {
         const background = new Background(preview, raw, canvas, options)
         const clip = new Clip(canvas, options)
         clip.selected = { sx: 100, sy: 100, sw: 300, sh: 200 }
-        clip.debug = true
+        clip.testing = true
         clip.draw()
 
         const rCanvas = background.applyToNewestCanvas(clip)
