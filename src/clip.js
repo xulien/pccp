@@ -1,3 +1,5 @@
+const debug = require('debug')('pccp:clip')
+
 export default class Clip {
 
   constructor(canvas, options) {
@@ -10,9 +12,13 @@ export default class Clip {
 
     this.clip = {}
 
-    this.debug = false
+    this.testing = false
 
-    this.output_ratio = options.output.w / options.output.h
+    if (Array.isArray(options.output)) {
+      this.output_ratio = options.output[0].w / options.output[0].h
+    } else {
+      this.output_ratio = options.output.w / options.output.h
+    }
 
     this.ctx.fillStyle = this.options.clip.s
 
@@ -44,6 +50,10 @@ export default class Clip {
     this.canvas.addEventListener('mousemove', this.onMove.bind(this), false)
     this.canvas.addEventListener('wheel', this.onWheel.bind(this), false)
     this.canvas.addEventListener('mouseleave', this.onLeave.bind(this), false)
+
+    debug('init => output ratio', this.output_ratio)
+    debug('init => mouse position', this.mousePos)
+    debug('init => clip', this.clip)
 
     this.draw()
   }
@@ -90,7 +100,7 @@ export default class Clip {
     }
 
 
-    if (!this.debug) {
+    if (!this.testing) {
       this.selected = {
         sx: this.t.x,
         sy: this.t.h,
@@ -106,6 +116,7 @@ export default class Clip {
     this.ctx.fillRect(this.t.x, this.t.y, this.t.w, this.t.h)
     this.ctx.fillRect(this.b.x, this.b.y, this.b.w, this.b.h)
 
+    debug('draw => selected', this.selected)
   }
 
   onLeave() {
