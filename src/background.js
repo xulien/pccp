@@ -1,4 +1,7 @@
 import request from './request'
+const debug = require('debug')('pccp:background')
+import { encode } from 'mozjpeg-js'
+import cargo from 'async/cargo'
 
 export default class Background {
 
@@ -10,7 +13,6 @@ export default class Background {
     this.preview.ratio = this.preview.width / this.preview.height
 
     this.options = options
-    this.options.output.r = this.options.output.w / this.options.output.h
 
     this.clip = Object.assign({}, this.options.clip)
 
@@ -21,7 +23,7 @@ export default class Background {
 
     this.ctx = this.canvas.getContext('2d')
 
-    this.resultData = null
+    this.resultData = []
     this.position = {
       x: this.canvas.offsetTop,
       y: this.canvas.offsetLeft
@@ -34,6 +36,10 @@ export default class Background {
 
     this.average()
     this.rgbDiff = this.rgbAverage
+
+    debug('init => output options', this.options.output)
+    debug('init => board options', this.options.board)
+    debug('init => position', this.position)
 
   }
 
@@ -55,6 +61,8 @@ export default class Background {
       green: Math.round(green / m),
       blue: Math.round(blue / m)
     }
+
+    debug('average', this.rgbAverage)
 
     return this
   }
@@ -106,7 +114,8 @@ export default class Background {
     return this
   }
 
-  applyToRaw(type) {
+  applyToRaw() {
+
     const canvasRaw = document.createElement('canvas')
     canvasRaw.width = this.raw.width
     canvasRaw.height = this.raw.height
@@ -135,60 +144,107 @@ export default class Background {
     }
 
     rawContext.putImageData(rawData, 0, 0)
-
-    return canvasRaw.toDataURL('image/' + type)
+    return canvasRaw
   }
 
-  resizePreviewDependingThanOutput() {
+  resizePreviewDependingThanOutput(output) {
+
+    output.r = output.w / output.h
 
     const outputIsBiggerThanBoard =
-    this.options.output.w > this.options.board.side ||
-    this.options.output.h > this.options.board.side
+    output.w > this.options.board.side ||
+    output.h > this.options.board.side
+
+    debug('outputIsBiggerThanBoard', outputIsBiggerThanBoard)
 
     if (outputIsBiggerThanBoard) {
-      if (this.options.output.r > 1) {
+      debug('output ratio', output.r )
+      if (output.r > 1) {
         this.preview.width = this.options.board.side
-        this.preview.height = this.preview.width / this.options.output.r
-      } else if (this.options.output.r < 1) {
+        this.preview.height = this.preview.width / output.r
+      } else if (output.r < 1) {
         this.preview.height = this.options.board.side
-        this.preview.width = this.preview.height * this.options.output.r
+        this.preview.width = this.preview.height * output.r
       } else {
         this.preview.width = this.preview.height = this.options.board.side
       }
     } else {
-      this.preview.width = this.options.output.w
-      this.preview.height = this.options.output.h
+      this.preview.width = output.w
+      this.preview.height = output.h
     }
 
+    debug('resizePreviewDependingThanOutput => width height', this.preview.width, this.preview.height)
   }
 
   applyToNewestCanvas(clip) {
     const canvas = document.createElement('canvas')
 
-    clip = clip.selected
+    debug('applyToNewestCanvas => selected clip', clip)
 
     const x = Math.round(( this.raw.width / this.canvas.width ) * clip.sx )
     const y = Math.round(( this.raw.height / this.canvas.height ) * clip.sy )
     const w = Math.round(( this.raw.width / this.canvas.width ) * clip.sw )
     const h = Math.round(( this.raw.height / this.canvas.height ) * clip.sh )
 
-    canvas.width  = this.options.output.w
-    canvas.height = this.options.output.h
+    let output = this.options.output
+    if (Array.isArray(output)) output = output[0]
 
-    this.resizePreviewDependingThanOutput()
+    canvas.width  = output.w
+    canvas.height = output.h
 
-    const newest = new Image()
-    newest.src = this.applyToRaw('jpeg')
+    this.resizePreviewDependingThanOutput(output)
 
     const context = canvas.getContext('2d')
-    context.drawImage(newest, x, y, w, h, 0, 0, this.options.output.w, this.options.output.h)
+    context.drawImage(this.applyToRaw(), x, y, w, h, 0, 0, output.w, output.h)
 
     return canvas
+
   }
 
-  apply(clip) {
-    const newestCanvas = this.applyToNewestCanvas(clip)
-    return newestCanvas.toDataURL('image/jpeg')
+  optimize(canvas, cb) {
+    canvas.toBlob(blob => {
+      const reader = new FileReader()
+      reader.addEventListener('loadend', () => {
+        const buf = Buffer.from(reader.result)
+        const optimized = encode(buf)
+        cb('data:image/jpeg;base64,' + btoa(String.fromCharCode.apply(null, optimized.data)))
+      })
+      reader.readAsArrayBuffer(blob)
+    }, 'image/bmp')
+  }
+
+  apply(clip, cb) {
+    this.resultData = []
+    let outputs = this.options.output
+
+    if (!Array.isArray(outputs)) outputs = [outputs]
+
+    const newestCanvas = this.applyToNewestCanvas(clip.selected)
+
+    const options = cargo((output, done) => {
+      output = output[0]
+
+      const canvas = document.createElement('canvas')
+      canvas.width  = output.w
+      canvas.height = output.h
+      const context = canvas.getContext('2d')
+
+      context.drawImage(newestCanvas, 0, 0, canvas.width, canvas.height)
+      this.optimize(canvas, dataUri => {
+        this.resultData.push({ img: dataUri, tag: output.t })
+        done()
+      })
+    }, 1)
+
+    outputs.forEach(output => options.push(output, err => {
+      if (err) console.warn(err)
+    }))
+
+    options.drain = () => {
+      console.log('all items have been processed')
+      cb(this.resultData[0].img)
+    }
+
   }
 
   save() {
@@ -199,8 +255,11 @@ export default class Background {
     xhr.setRequestHeader('Content-Type', 'application/json')
     xhr.setRequestHeader('Accept', 'application/json')
     xhr.setRequestHeader('Access-Control-Allow-Origin', '*')
+    debug('data', { value: this.resultData })
+    debug('send', JSON.stringify({ value: this.resultData }))
     xhr.send(JSON.stringify({
-      value: this.resultData
+      value: this.resultData,
+      payload: this.options.payload
     }))
   }
 

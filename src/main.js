@@ -59,7 +59,9 @@ export default (raw, board, options) => {
   greenRangeSlider.set(background.rgbAverage.green)
   blueRangeSlider.set(background.rgbAverage.blue)
 
-  apply.addEventListener('click', () => preview.src = background.apply(clip))
+  apply.addEventListener('click', () => background.apply(clip, dataUri => {
+    preview.src = dataUri
+  }))
   save.addEventListener('click', () => background.save())
   clear.addEventListener('click', () => {
     background.clear()
