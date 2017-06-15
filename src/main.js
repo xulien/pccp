@@ -1,11 +1,16 @@
 import Background from './background'
 import Clip from './clip'
 
+function hide(e) {
+  e.style.display = 'none'
+}
+
 export default (raw, board, options) => {
 
   const {
     canvas_clip,
     canvas_background,
+    popin,
     clear,
     apply,
     save,
@@ -61,6 +66,7 @@ export default (raw, board, options) => {
 
   apply.addEventListener('click', () => background.apply(clip, dataUri => {
     preview.src = dataUri
+    hide(popin)
   }))
   save.addEventListener('click', () => background.save())
   clear.addEventListener('click', () => {

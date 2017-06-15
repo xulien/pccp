@@ -1,6 +1,14 @@
 import Board from './board'
 import Main from './main'
 
+function show(e) {
+  e.style.display = 'block'
+}
+
+function hide(e) {
+  e.style.display = 'none'
+}
+
 exports.init = (options = {}) => {
   if (!options.output) return console.warn('no output values')
 
@@ -17,7 +25,10 @@ exports.init = (options = {}) => {
 
   const board = Board(pccp, options)
 
-  const { dropbox, preview } = board
+  const { dropbox, preview, popin, show_button, popin_bg } = board
+
+  show_button.addEventListener('click', () => show(popin))
+  popin_bg.addEventListener('click', () => hide(popin))
 
   const load = () => {
 
@@ -28,6 +39,7 @@ exports.init = (options = {}) => {
       URL.revokeObjectURL(file)
       preview.addEventListener('load', function main() {
         Main(raw, board, options)
+        show(popin)
         preview.removeEventListener('load', main, false)
       }, false)
       preview.src = URL.createObjectURL(file)
