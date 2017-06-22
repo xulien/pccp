@@ -5,30 +5,36 @@
 
     <link rel="stylesheet" type="text/css" href="node_modules/nouislider/distribute/nouislider.css">
     <script type="text/javascript" src="dist/app.bundle.js" charset="utf-8"></script>
-    <script src="dist/mozjpeg.es6.js" charset="utf-8"></script>
     <script type="text/javascript">
       document.addEventListener("DOMContentLoaded", () => pccp.init({
-        label: 'editeur',
-        output: [
-          {
-            w:300,
-            h:150,
-            t: 'large'
-          },
-          {
-            w:150,
-            h: 75,
-            t: 'small'
-          }
-        ]
-      }));
+          output: [
+            {
+              w:480,
+              h:240,
+              t: 'large'
+            },
+            {
+              w:300,
+              h:150,
+              t: 'medium'
+            },
+            {
+              w:150,
+              h: 75,
+              t: 'small'
+            }
+          ]
+        }))
     </script>
 
   </head>
   <body>
-    <div id="pccp"></div>
+    <div style="display: block; width: 920px; height: 600px; margin: auto;">
+      <div id="pccp"></div>
+    </div>
+
     <div style="margin: 10px; color: red;">
-      <p>>>>> Output format is set to: large => 300x150 and small => 150x75</p>
+      <p>>>>> Output format is set to: large => 480x240, medium => 300x150 and small => 150x75</p>
       <p>>>>> Preview showing large output file</p>
       <p>>>>> Send action is unusable for this demo</p>
     </div>

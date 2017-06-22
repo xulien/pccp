@@ -1,52 +1,50 @@
-import Board from './board'
+import { loadbox } from './components/loadbox'
+import { worklayer } from './components/workzone'
+import { load_preview } from './components/preview'
 import Main from './main'
+import Dashboard from './dashboard'
 
-function show(e) {
-  e.style.display = 'block'
-}
-
-function hide(e) {
-  e.style.display = 'none'
-}
+const debug = require('debug')('pccp:app')
 
 exports.init = (options = {}) => {
-  if (!options.output) return console.warn('no output values')
-
+  if (!options.output) {
+    debug('no output values')
+    return
+  }
+  options.dashboard = options.dashboard || {}
   options.dest = options.dest || '/thumbnail'
-  options.board = options.board || {}
-  options.board.side = options.board.side || 500
   options.clip = options.clip || {}
   options.clip = {
     s: options.clip.s || 'rgba(0,0,0,0.8)',
   }
 
+  exports.options = options
+  load_preview()
+
   const pccp = document.getElementById('pccp')
   if (!pccp) return
 
-  const board = Board(pccp, options)
-
-  const { dropbox, preview, popin, show_button, popin_bg } = board
-
-  show_button.addEventListener('click', () => show(popin))
-  popin_bg.addEventListener('click', () => hide(popin))
+  Dashboard(pccp)
 
   const load = () => {
 
     const raw = new Image()
-    const file = dropbox.files[0]
+    const file = loadbox.files[0]
 
     raw.addEventListener('load', () => {
       URL.revokeObjectURL(file)
-      preview.addEventListener('load', function main() {
-        Main(raw, board, options)
-        show(popin)
-        preview.removeEventListener('load', main, false)
+      worklayer.addEventListener('load', function main() {
+        exports.raw = raw
+        worklayer.crossOrigin = 'Anonymous'
+        worklayer.ratio = worklayer.width / worklayer.height
+        Main()
+        worklayer.removeEventListener('load', main, false)
       }, false)
-      preview.src = URL.createObjectURL(file)
+      worklayer.src = URL.createObjectURL(file)
     }, false)
 
     raw.src = URL.createObjectURL(file)
   }
 
-  dropbox.addEventListener('change', load)
+  loadbox.addEventListener('change', load)
 }

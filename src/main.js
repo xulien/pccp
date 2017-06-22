@@ -1,78 +1,45 @@
 import Background from './background'
 import Clip from './clip'
+import { options } from './app'
+import { canvas_bg, canvas_fg } from './components/workzone'
+import workspace from './components/workspace'
+import { popin } from './components/popin'
+import { eventSlider } from './components/slider'
+import { eventBrightness } from './components/brightness'
+import { eventControl, show, save, editor_button } from './components/control'
+import { raw } from './app'
+import { dashboard } from './dashboard'
 
-function hide(e) {
-  e.style.display = 'none'
-}
+const debug = require('debug')('pccp:main')
 
-export default (raw, board, options) => {
+export default () => {
 
-  const {
-    canvas_clip,
-    canvas_background,
-    popin,
-    clear,
-    apply,
-    save,
-    preview,
-    redRangeSlider,
-    greenRangeSlider,
-    blueRangeSlider,
-    lessBrightness,
-    moreBrightness
-  } = board
+  show(popin)
+  const workspace_raw = workspace.getBoundingClientRect()
+  debug('workspace_raw', workspace_raw)
+
+  options.workzone = (workspace_raw.height < 1000) ? workspace_raw.height: 1000
 
   raw.ratio = raw.width / raw.height
 
-  // Initial canvas_background size ==========
+  // Initial canvas_bg size ==========
   if (raw.ratio < 1) {
-    canvas_background.width = canvas_clip.width = options.board.side * raw.ratio
-    canvas_background.height = canvas_clip.height = options.board.side
+    canvas_bg.width = canvas_fg.width = options.workzone * raw.ratio
+    canvas_bg.height = canvas_fg.height = options.workzone
   } else if (raw.ratio > 1) {
-    canvas_background.width = canvas_clip.width = options.board.side
-    canvas_background.height = canvas_clip.height = options.board.side / raw.ratio
+    canvas_bg.width = canvas_fg.width = options.workzone
+    canvas_bg.height = canvas_fg.height = options.workzone / raw.ratio
   } else {
-    canvas_background.width = canvas_clip.width = canvas_background.height = canvas_clip.height  = options.board.side
+    canvas_bg.width = canvas_fg.width = canvas_bg.height = canvas_fg.height  = options.workzone
   }
   // =============================================================================
 
-  const background = new Background(preview, raw, canvas_background, options)
-  const clip = new Clip(canvas_clip, options)
+  const background = new Background()
+  const clip = new Clip()
+  dashboard.appendChild(editor_button)
+  dashboard.appendChild(save)
+  eventSlider(background)
+  eventControl(clip, background)
+  eventBrightness()
 
-  redRangeSlider.updateOptions({ start: [ background.rgbAverage.red ] })
-  redRangeSlider.on('update', ( values, handle ) => background.changeColorLevel(Math.round(values[handle]), 'red'))
-
-  greenRangeSlider.updateOptions({ start: [ background.rgbAverage.green ] })
-  greenRangeSlider.on('update', ( values, handle ) => background.changeColorLevel(Math.round(values[handle]), 'green'))
-
-  blueRangeSlider.updateOptions({ start: [ background.rgbAverage.blue ] })
-  blueRangeSlider.on('update', ( values, handle ) => background.changeColorLevel(Math.round(values[handle]), 'blue'))
-
-  moreBrightness.addEventListener('click', () => {
-    redRangeSlider.set(Math.round(redRangeSlider.get()) + 5)
-    greenRangeSlider.set(Math.round(greenRangeSlider.get()) + 5)
-    blueRangeSlider.set(Math.round(blueRangeSlider.get()) + 5)
-  })
-
-  lessBrightness.addEventListener('click', () => {
-    redRangeSlider.set(Math.round(redRangeSlider.get()) - 5)
-    greenRangeSlider.set(Math.round(greenRangeSlider.get()) - 5)
-    blueRangeSlider.set(Math.round(blueRangeSlider.get()) - 5)
-  })
-
-  redRangeSlider.set(background.rgbAverage.red)
-  greenRangeSlider.set(background.rgbAverage.green)
-  blueRangeSlider.set(background.rgbAverage.blue)
-
-  apply.addEventListener('click', () => background.apply(clip, dataUri => {
-    preview.src = dataUri
-    hide(popin)
-  }))
-  save.addEventListener('click', () => background.save())
-  clear.addEventListener('click', () => {
-    background.clear()
-    redRangeSlider.set(background.rgbAverage.red)
-    greenRangeSlider.set(background.rgbAverage.green)
-    blueRangeSlider.set(background.rgbAverage.blue)
-  })
 }

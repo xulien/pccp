@@ -1,44 +1,40 @@
 import request from './request'
-const debug = require('debug')('pccp:background')
 import { encode } from 'mozjpeg-js'
 import cargo from 'async/cargo'
+import { flash } from './dashboard'
+import { preview } from './components/preview'
+import { raw, options } from './app'
+import { canvas_bg, worklayer } from './components/workzone'
+
+const debug = require('debug')('pccp:background')
 
 export default class Background {
 
-  constructor(preview, raw, canvas, options) {
+  constructor() {
 
-    this.preview = preview
-    this.raw = raw
-    this.preview.crossOrigin = 'Anonymous'
-    this.preview.ratio = this.preview.width / this.preview.height
-
-    this.options = options
-
-    this.clip = Object.assign({}, this.options.clip)
-
-    this.canvas = canvas
+    this.clip = Object.assign({}, options.clip)
 
     this.rgbAverage = { red: 0, green: 0, blue: 0 }
     this.rgbDiff = { red: 0, green: 0, blue: 0 }
 
-    this.ctx = this.canvas.getContext('2d')
+    this.ctx = canvas_bg.getContext('2d')
 
     this.resultData = []
     this.position = {
-      x: this.canvas.offsetTop,
-      y: this.canvas.offsetLeft
+      x: canvas_bg.offsetTop,
+      y: canvas_bg.offsetLeft
     }
 
     this.draw()
 
-    this.imageData = this.ctx.getImageData(0, 0, this.canvas.width, this.canvas.height)
+    this.imageData = this.ctx.getImageData(0, 0, canvas_bg.width, canvas_bg.height)
     this.srcData = new Uint8ClampedArray(this.imageData.data)
 
     this.average()
     this.rgbDiff = this.rgbAverage
 
-    debug('init => output options', this.options.output)
-    debug('init => board options', this.options.board)
+    debug('init => output options', options.output)
+    debug('init => dashboard options', options.dashboard)
     debug('init => position', this.position)
 
   }
@@ -102,14 +98,14 @@ export default class Background {
 
 
   draw() {
-    this.ctx.drawImage(this.preview, 0, 0, this.canvas.width, this.canvas.height)
+    this.ctx.drawImage(worklayer, 0, 0, canvas_bg.width, canvas_bg.height)
     return this
   }
 
   clear() {
-    const initial = new ImageData(this.srcData, this.canvas.width, this.canvas.height)
+    const initial = new ImageData(this.srcData, canvas_bg.width, canvas_bg.height)
     this.ctx.putImageData(initial, 0, 0)
-    this.imageData = this.ctx.getImageData(0, 0, this.canvas.width, this.canvas.height)
+    this.imageData = this.ctx.getImageData(0, 0, canvas_bg.width, canvas_bg.height)
     this.average()
     return this
   }
@@ -117,13 +113,13 @@ export default class Background {
   applyToRaw() {
 
     const canvasRaw = document.createElement('canvas')
-    canvasRaw.width = this.raw.width
-    canvasRaw.height = this.raw.height
+    canvasRaw.width = raw.width
+    canvasRaw.height = raw.height
 
     const rawContext = canvasRaw.getContext('2d')
-    rawContext.drawImage(this.raw, 0, 0, this.raw.width, this.raw.height)
+    rawContext.drawImage(raw, 0, 0, raw.width, raw.height)
 
-    const rawData = rawContext.getImageData(0, 0, this.raw.width, this.raw.height)
+    const rawData = rawContext.getImageData(0, 0, raw.width, raw.height)
 
     if (this.rgbAverage.red - this.rgbDiff.red != 0) {
       for (var i = 0; i < rawData.data.length; i += 4) {
@@ -151,29 +147,29 @@ export default class Background {
 
     output.r = output.w / output.h
 
-    const outputIsBiggerThanBoard =
-    output.w > this.options.board.side ||
-    output.h > this.options.board.side
+    const outputIsBiggerThanDashboard =
+    output.w > options.workzone ||
+    output.h > options.workzone
 
-    debug('outputIsBiggerThanBoard', outputIsBiggerThanBoard)
+    debug('outputIsBiggerThanDashboard', outputIsBiggerThanDashboard)
 
-    if (outputIsBiggerThanBoard) {
+    if (outputIsBiggerThanDashboard) {
       debug('output ratio', output.r )
       if (output.r > 1) {
-        this.preview.width = this.options.board.side
-        this.preview.height = this.preview.width / output.r
+        worklayer.width = options.workzone
+        worklayer.height = worklayer.width / output.r
       } else if (output.r < 1) {
-        this.preview.height = this.options.board.side
-        this.preview.width = this.preview.height * output.r
+        worklayer.height = options.workzone
+        worklayer.width = worklayer.height * output.r
       } else {
-        this.preview.width = this.preview.height = this.options.board.side
+        worklayer.width = worklayer.height = options.workzone
       }
     } else {
-      this.preview.width = output.w
-      this.preview.height = output.h
+      worklayer.width = output.w
+      worklayer.height = output.h
     }
 
-    debug('resizePreviewDependingThanOutput => width height', this.preview.width, this.preview.height)
+    debug('resizePreviewDependingThanOutput => width height', worklayer.width, worklayer.height)
   }
 
   applyToNewestCanvas(clip) {
@@ -181,12 +177,12 @@ export default class Background {
 
     debug('applyToNewestCanvas => selected clip', clip)
 
-    const x = Math.round(( this.raw.width / this.canvas.width ) * clip.sx )
-    const y = Math.round(( this.raw.height / this.canvas.height ) * clip.sy )
-    const w = Math.round(( this.raw.width / this.canvas.width ) * clip.sw )
-    const h = Math.round(( this.raw.height / this.canvas.height ) * clip.sh )
+    const x = Math.round(( raw.width / canvas_bg.width ) * clip.sx )
+    const y = Math.round(( raw.height / canvas_bg.height ) * clip.sy )
+    const w = Math.round(( raw.width / canvas_bg.width ) * clip.sw )
+    const h = Math.round(( raw.height / canvas_bg.height ) * clip.sh )
 
-    let output = this.options.output
+    let output = options.output
     if (Array.isArray(output)) output = output[0]
 
     canvas.width  = output.w
@@ -207,6 +203,7 @@ export default class Background {
       reader.addEventListener('loadend', () => {
         const buf = Buffer.from(reader.result)
         const optimized = encode(buf)
+        if (optimized.stderr) debug('mozjpeg error: ', optimized.stderr)
         cb('data:image/jpeg;base64,' + btoa(String.fromCharCode.apply(null, optimized.data)))
       })
       reader.readAsArrayBuffer(blob)
@@ -215,13 +212,13 @@ export default class Background {
 
   apply(clip, cb) {
     this.resultData = []
-    let outputs = this.options.output
+    let outputs = options.output
 
     if (!Array.isArray(outputs)) outputs = [outputs]
 
     const newestCanvas = this.applyToNewestCanvas(clip.selected)
 
-    const options = cargo((output, done) => {
+    const opt = cargo((output, done) => {
       output = output[0]
 
       const canvas = document.createElement('canvas')
@@ -236,30 +233,61 @@ export default class Background {
       })
     }, 1)
 
-    outputs.forEach(output => options.push(output, err => {
-      if (err) console.warn(err)
+    outputs.forEach(output => opt.push(output, err => {
+      if (err) debug(err)
     }))
 
-    options.drain = () => {
-      console.log('all items have been processed')
+    opt.drain = () => {
+      const item_preview_list = preview.querySelectorAll('.preview_item')
+      this.resultData.forEach((r, i) => {
+        const img = item_preview_list[i].childNodes[0]
+        const label = item_preview_list[i].childNodes[1]
+
+        img.src = r.img
+        img.width = options.output[i].w
+        img.height = options.output[i].h
+        label.childNodes[0].data = img.width + 'x' + img.height
+      })
       cb(this.resultData[0].img)
     }
 
   }
 
   save() {
+
+    function transfertComplete() {
+      flash.innerText = 'pictures are well send'
+      flash.style.color = 'green'
+      setTimeout(() => { // TODO must be replaced by transition
+        flash.style.color = 'white'
+      }, 2000)
+    }
+
+    function transfertFailed() {
+      flash.innerText = 'error, pictures not send'
+      flash.style.color = 'red'
+      setTimeout(() => {
+        flash.style.color = 'white'
+      }, 2000)
+    }
+
     const xhr = request()
-    xhr.open('POST', this.options.dest, true)
+    xhr.open('POST', options.dest, true)
+
     xhr.setRequestHeader('X-Requested-With','xmlhttprequest')
-    if (this.options.csrf) xhr.setRequestHeader('X-CSRF-Token', this.options.csrf)
+    if (options.csrf) xhr.setRequestHeader('X-CSRF-Token', options.csrf)
     xhr.setRequestHeader('Content-Type', 'application/json')
     xhr.setRequestHeader('Accept', 'application/json')
     xhr.setRequestHeader('Access-Control-Allow-Origin', '*')
+
+    xhr.addEventListener('load', transfertComplete, false)
+    xhr.addEventListener('error', transfertFailed, false)
+
     debug('data', { value: this.resultData })
     debug('send', JSON.stringify({ value: this.resultData }))
     xhr.send(JSON.stringify({
       value: this.resultData,
-      payload: this.options.payload
+      payload: options.payload
     }))
   }
 

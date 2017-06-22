@@ -3,7 +3,7 @@ const create = debug('getElement:create')
 const skip = debug('getElement:skip')
 
 export default (obj, options) => {
-  const { className, id, type, alt, text } = options
+  const { className, id, type, alt, text, for_ } = options
 
   let el = (id) ? document.getElementById(id) : document.getElementsByClassName(className)[0]
   let info = ''
@@ -20,6 +20,7 @@ export default (obj, options) => {
     if (className) el.className = className
     if (type) el.type = type
     if (alt) el.alt = alt
+    if (for_) el.setAttribute('for', for_)
 
     if (text) el.appendChild(document.createTextNode(text))
 
